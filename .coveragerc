@@ -1,0 +1,17 @@
+[run]
+branch = True
+source = compath_utils
+omit =
+    tests/*
+    docs/*
+
+[paths]
+source =
+    src/pybel
+    .tox/*/lib/python*/site-packages/compath_utils
+
+[report]
+show_missing = True
+exclude_lines =
+    def __str__
+    def __repr__
