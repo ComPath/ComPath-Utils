@@ -16,3 +16,25 @@ class ComPathPathway(ABC):
 
         :return: Returns a set of protein models that all have names
         """
+
+    @property
+    @abstractmethod
+    def resource_id(self):
+        """Returns the database-specific resource identifier (will be a SQLAlchemy Column instance)"""
+
+    @property
+    @abstractmethod
+    def url(self):
+        """Returns the URL to the resource, usually based in the identifer for this pathway
+
+        :rtype: str
+
+
+        Example for WikiPathways:
+
+        .. code-block:: python
+
+            >>> @property
+            >>> def url(self):
+            >>>     return 'https://www.wikipathways.org/index.php/Pathway:{}'.format(self.wikipathways_id)
+        """

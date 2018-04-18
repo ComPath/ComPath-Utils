@@ -2,10 +2,13 @@
 
 """This module contains the abstract manager that all ComPath managers should extend"""
 
-from abc import abstractmethod
+import itertools as itt
+from collections import Counter
 
 from bio2bel import AbstractManager
-from compath_utils.exc import CompathManagerPathwayModelError
+from compath_utils.exc import (
+    CompathManagerPathwayModelError, CompathManagerProteinModelError,
+)
 
 __all__ = [
     'CompathManager',
@@ -15,32 +18,38 @@ __all__ = [
 class CompathManager(AbstractManager):
     """This is the abstract class that all ComPath managers should extend"""
 
-    # This needs to be defined
+    #: The standard pathway SQLAlchemy model
     pathway_model = None
+
+    #: Put the standard database identifier (ex wikipathways_id or kegg_id)
+    pathway_model_identifier_column = None
+
+    #: The standard protein SQLAlchemy model
+    protein_model = None
 
     def __init__(self, *args, **kwargs):
         """Doesn't let this class get instantiated if the pathway_model"""
         if self.pathway_model is None:
             raise CompathManagerPathwayModelError('did not set class-level variable pathway_model')
 
+        # TODO use hasattr on class for checking this
+        # if self.pathway_model_identifier_column is None:
+        #     raise CompathManagerPathwayIdentifierError(
+        #         'did not set class-level variable pathway_model_standard_identifer')
+
+        if self.protein_model is None:
+            raise CompathManagerProteinModelError('did not set class-level variable protein_model')
+
         super().__init__(*args, **kwargs)
 
-    @abstractmethod
-    def get_pathway_by_id(self, pathway_id):
-        """Gets a pathway by its database-specific identifier. Not to be confused with the standard column called "id"
+    def _query_proteins_in_hgnc_list(self, gene_set):
+        """Returns the proteins in the database within the gene set query
 
-        :param pathway_id: Pathway identifier
-        :rtype: Optional[Pathway]
+        :param list[str] gene_set: hgnc symbol lists
+        :return: list of proteins models
         """
+        return self.session.query(self.protein_model).filter(self.protein_model.hgnc_symbol.in_(gene_set)).all()
 
-    @abstractmethod
-    def get_pathway_names_to_ids(self):
-        """Returns a dictionary of pathway names to ids
-
-        :rtype: dict[str,str]
-        """
-
-    @abstractmethod
     def query_gene_set(self, gene_set):
         """Returns pathway counter dictionary
 
@@ -48,6 +57,49 @@ class CompathManager(AbstractManager):
         :rtype: dict[str,dict]
         :return: Enriched pathways with mapped pathways/total
         """
+        proteins = self._query_proteins_in_hgnc_list(gene_set)
+
+        pathways_lists = [
+            protein.get_pathways_ids()
+            for protein in proteins
+        ]
+
+        # Flat the pathways lists and applies Counter to get the number matches in every mapped pathway
+        pathway_counter = Counter(itt.chain(*pathways_lists))
+
+        enrichment_results = dict()
+
+        for pathway_id, proteins_mapped in pathway_counter.items():
+            pathway = self.get_pathway_by_id(pathway_id)
+
+            pathway_gene_set = pathway.get_gene_set()  # Pathway gene set
+
+            enrichment_results[pathway_id] = {
+                "pathway_id": pathway_id,
+                "pathway_name": pathway.name,
+                "mapped_proteins": proteins_mapped,
+                "pathway_size": len(pathway_gene_set),
+                "pathway_gene_set": pathway_gene_set,
+            }
+
+        return enrichment_results
+
+    @classmethod
+    def _standard_pathway_identifier_filter(cls, pathway_id):
+        """Gets a SQLAlchemy filter for the standard pathway identifier
+
+        :param str pathway_id:
+        """
+        return cls.pathway_model_identifier_column == pathway_id
+
+    def get_pathway_by_id(self, pathway_id):
+        """Gets a pathway by its database-specific identifier. Not to be confused with the standard column called "id"
+
+        :param pathway_id: Pathway identifier
+        :rtype: Optional[Pathway]
+        """
+        return self.session.query(self.pathway_model).filter(
+            self._standard_pathway_identifier_filter(pathway_id)).one_or_none()
 
     def get_pathway_by_name(self, pathway_name):
         """Gets a pathway by its database-specific name
