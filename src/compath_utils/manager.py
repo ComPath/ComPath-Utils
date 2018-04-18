@@ -172,3 +172,20 @@ class CompathManager(AbstractManager):
             }
             for pathway in self.session.query(self.pathway_model).all()
         }
+
+    def get_gene_distribution(self):
+        """Returns the proteins in the database within the gene set query
+
+        :rtype: collections.Counter
+        :return: pathway sizes
+        """
+        gene_counter = Counter()
+
+        for pathway in self.get_all_pathways():
+            if not pathway.proteins:
+                continue
+
+            for gene in pathway.proteins:
+                gene_counter[gene.hgnc_symbol] += 1
+
+        return gene_counter
