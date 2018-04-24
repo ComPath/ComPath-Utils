@@ -42,6 +42,10 @@ class CompathManager(AbstractManager):
 
         super().__init__(*args, **kwargs)
 
+    def is_populated(self):
+        """Check if the database is already poulated."""
+        return 0 < self._count_model(self.pathway_model)
+
     def _query_proteins_in_hgnc_list(self, gene_set):
         """Returns the proteins in the database within the gene set query
 
