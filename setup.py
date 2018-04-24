@@ -21,7 +21,7 @@ CLASSIFIERS = [
     'Topic :: Scientific/Engineering :: Bio-Informatics'
 ]
 INSTALL_REQUIRES = [
-    'bio2bel>=0.0.7',
+    'bio2bel>=0.0.9',
 ]
 EXTRAS_REQUIRE = {}
 ENTRY_POINTS = {}
