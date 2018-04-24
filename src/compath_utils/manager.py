@@ -5,10 +5,9 @@
 import itertools as itt
 from collections import Counter
 
+from compath_utils.exc import CompathManagerPathwayModelError, CompathManagerProteinModelError
+
 from bio2bel import AbstractManager
-from compath_utils.exc import (
-    CompathManagerPathwayModelError, CompathManagerProteinModelError,
-)
 
 __all__ = [
     'CompathManager',
