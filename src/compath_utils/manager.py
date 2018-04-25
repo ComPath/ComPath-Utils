@@ -5,9 +5,10 @@
 import itertools as itt
 from collections import Counter
 
-from compath_utils.exc import CompathManagerPathwayModelError, CompathManagerProteinModelError
-
 from bio2bel import AbstractManager
+
+from compath_utils.cli_utils import add_cli_export
+from compath_utils.exc import CompathManagerPathwayModelError, CompathManagerProteinModelError
 
 __all__ = [
     'CompathManager',
@@ -192,3 +193,10 @@ class CompathManager(AbstractManager):
                 gene_counter[gene.hgnc_symbol] += 1
 
         return gene_counter
+
+    @classmethod
+    def get_cli(cls):
+        """Gets a :mod:`click` main function to use as a command line interface."""
+        main = super().get_cli()
+        add_cli_export(main)
+        return main

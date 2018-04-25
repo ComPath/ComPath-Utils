@@ -1,2 +1,4 @@
 bio2bel>=0.0.9
 sqlalchemy
+pandas
+click

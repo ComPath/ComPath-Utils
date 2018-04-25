@@ -25,6 +25,8 @@ CLASSIFIERS = [
 INSTALL_REQUIRES = [
     'bio2bel>=0.0.9',
     'sqlalchemy',
+    'pandas',
+    'click',
 ]
 EXTRAS_REQUIRE = {}
 ENTRY_POINTS = {}
