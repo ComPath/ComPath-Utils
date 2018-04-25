@@ -3,16 +3,21 @@
 """This module contains the abstract manager that all ComPath managers should extend"""
 
 import itertools as itt
+import logging
+import os
 from collections import Counter
 
+import click
 from bio2bel import AbstractManager
 
-from compath_utils.cli_utils import add_cli_export
 from compath_utils.exc import CompathManagerPathwayModelError, CompathManagerProteinModelError
+from compath_utils.utils import write_dict
 
 __all__ = [
     'CompathManager',
 ]
+
+log = logging.getLogger(__name__)
 
 
 class CompathManager(AbstractManager):
@@ -194,9 +199,23 @@ class CompathManager(AbstractManager):
 
         return gene_counter
 
+    @staticmethod
+    def _add_cli_export(main):
+        """Adds the pathway export function to the CLI"""
+
+        @main.command()
+        @click.option('-d', '--directory', default=os.getcwd(), help='Defaults to CWD')
+        @click.pass_obj
+        def export(manager, directory):
+            """Export all pathway - gene info to a excel file"""
+
+            # https://stackoverflow.com/questions/19736080/creating-dataframe-from-a-dictionary-where-entries-have-different-lengths
+            gene_sets_dict = manager.export_genesets()
+            write_dict(gene_sets_dict, directory, manager.module_name)
+
     @classmethod
     def get_cli(cls):
         """Gets a :mod:`click` main function to use as a command line interface."""
         main = super().get_cli()
-        add_cli_export(main)
+        cls._add_cli_export(main)
         return main
