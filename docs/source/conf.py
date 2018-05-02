@@ -45,7 +45,7 @@ author = 'Charles Tapley Hoyt and Daniel Domingo-Fernández'
 # built documents.
 #
 # The full version, including alpha/beta/rc tags.
-release = '0.0.4-dev'
+release = '0.0.5-dev'
 
 # The short X.Y version.
 parsed_version = re.match(
