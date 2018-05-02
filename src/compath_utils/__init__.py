@@ -43,7 +43,7 @@ from compath_utils.exc import *
 from compath_utils.manager import *
 from compath_utils.models import *
 
-__version__ = '0.0.5'
+__version__ = '0.0.6-dev'
 
 __title__ = 'compath_utils'
 __description__ = "A utilities package for ComPath"
