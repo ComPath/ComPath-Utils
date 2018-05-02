@@ -130,6 +130,16 @@ class CompathManager(AbstractManager):
         """
         return self.session.query(self.pathway_model).all()
 
+    def get_all_pathway_names(self):
+        """Gets all pathway names stored in the database
+
+        :rtype: list[str]
+        """
+        return [
+            pathway.name
+            for pathway in self.session.query(self.pathway_model).all()
+        ]
+
     def get_all_hgnc_symbols(self):
         """Returns the set of genes present in all Pathways
 
