@@ -65,7 +65,7 @@ class CompathManager(AbstractManager):
         :return: Optional[models.Protein]
         """
         return self.session.query(self.protein_model).filter(
-            self.protein_model.hgnc_symbol == hgnc_symbol).one_or_none()
+            self.protein_model.hgnc_symbol == hgnc_symbol).all()
 
     def query_gene_set(self, gene_set):
         """Return pathway counter dictionary.
