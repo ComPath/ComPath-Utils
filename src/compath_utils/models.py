@@ -12,20 +12,20 @@ class ComPathPathway(ABC):
 
     @abstractmethod
     def get_gene_set(self):
-        """Returns the genes associated with the pathway (gene set). Note this function restricts to HGNC symbols genes
+        """Return the genes associated with the pathway (gene set). Note this function restricts to HGNC symbols genes
 
-        :return: Returns a set of protein models that all have names
+        :return: Return a set of protein models that all have names
         """
 
     @property
     @abstractmethod
     def resource_id(self):
-        """Returns the database-specific resource identifier (will be a SQLAlchemy Column instance)"""
+        """Return the database-specific resource identifier (will be a SQLAlchemy Column instance)"""
 
     @property
     @abstractmethod
     def url(self):
-        """Returns the URL to the resource, usually based in the identifer for this pathway
+        """Return the URL to the resource, usually based in the identifer for this pathway
 
         :rtype: str
 

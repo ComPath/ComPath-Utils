@@ -9,7 +9,6 @@ from collections import Counter
 
 import click
 from bio2bel import AbstractManager
-
 from compath_utils.exc import CompathManagerPathwayModelError, CompathManagerProteinModelError
 from compath_utils.utils import write_dict
 
@@ -52,15 +51,24 @@ class CompathManager(AbstractManager):
         return 0 < self._count_model(self.pathway_model)
 
     def _query_proteins_in_hgnc_list(self, gene_set):
-        """Returns the proteins in the database within the gene set query
+        """Return the proteins in the database within the gene set query.
 
         :param list[str] gene_set: hgnc symbol lists
         :return: list of proteins models
         """
         return self.session.query(self.protein_model).filter(self.protein_model.hgnc_symbol.in_(gene_set)).all()
 
+    def query_protein_by_hgnc(self, hgnc_symbol):
+        """Return the proteins in the database within the gene set query.
+
+        :param str hgnc_symbol: hgnc symbol
+        :return: Optional[models.Protein]
+        """
+        return self.session.query(self.protein_model).filter(
+            self.protein_model.hgnc_symbol == hgnc_symbol).one_or_none()
+
     def query_gene_set(self, gene_set):
-        """Returns pathway counter dictionary
+        """Return pathway counter dictionary.
 
         :param iter[str] gene_set: An iterable of HGNC gene symbols to be queried
         :rtype: dict[str,dict]
@@ -95,14 +103,14 @@ class CompathManager(AbstractManager):
 
     @classmethod
     def _standard_pathway_identifier_filter(cls, pathway_id):
-        """Gets a SQLAlchemy filter for the standard pathway identifier
+        """Get a SQLAlchemy filter for the standard pathway identifier.
 
         :param str pathway_id:
         """
         return cls.pathway_model_identifier_column == pathway_id
 
     def get_pathway_by_id(self, pathway_id):
-        """Gets a pathway by its database-specific identifier. Not to be confused with the standard column called "id"
+        """Get a pathway by its database-specific identifier. Not to be confused with the standard column called "id".
 
         :param pathway_id: Pathway identifier
         :rtype: Optional[Pathway]
@@ -111,7 +119,7 @@ class CompathManager(AbstractManager):
             self._standard_pathway_identifier_filter(pathway_id)).one_or_none()
 
     def get_pathway_by_name(self, pathway_name):
-        """Gets a pathway by its database-specific name
+        """Get a pathway by its database-specific name.
 
         :param pathway_name: Pathway name
         :rtype: Optional[Pathway]
@@ -124,14 +132,14 @@ class CompathManager(AbstractManager):
         return pathways[0]
 
     def get_all_pathways(self):
-        """Gets all pathways stored in the database
+        """Get all pathways stored in the database.
 
         :rtype: list[Pathway]
         """
         return self.session.query(self.pathway_model).all()
 
     def get_all_pathway_names(self):
-        """Gets all pathway names stored in the database
+        """Get all pathway names stored in the database.
 
         :rtype: list[str]
         """
@@ -141,7 +149,7 @@ class CompathManager(AbstractManager):
         ]
 
     def get_all_hgnc_symbols(self):
-        """Returns the set of genes present in all Pathways
+        """Return the set of genes present in all Pathways.
 
         :rtype: set
         """
@@ -153,7 +161,7 @@ class CompathManager(AbstractManager):
         }
 
     def get_pathway_size_distribution(self):
-        """Returns pathway sizes
+        """Return pathway sizes.
 
         :rtype: dict
         :return: pathway sizes
@@ -168,7 +176,7 @@ class CompathManager(AbstractManager):
         }
 
     def query_pathway_by_name(self, query, limit=None):
-        """Returns all pathways having the query in their names
+        """Return all pathways having the query in their names.
 
         :param query: query string
         :param Optional[int] limit: limit result query
@@ -183,7 +191,7 @@ class CompathManager(AbstractManager):
         return q.all()
 
     def export_genesets(self):
-        """Returns pathway - genesets mapping"""
+        """Return pathway - genesets mapping"""
         return {
             pathway.name: {
                 protein.hgnc_symbol
@@ -193,7 +201,7 @@ class CompathManager(AbstractManager):
         }
 
     def get_gene_distribution(self):
-        """Returns the proteins in the database within the gene set query
+        """Return the proteins in the database within the gene set query.
 
         :rtype: collections.Counter
         :return: pathway sizes
@@ -225,7 +233,7 @@ class CompathManager(AbstractManager):
 
     @classmethod
     def get_cli(cls):
-        """Gets a :mod:`click` main function to use as a command line interface."""
+        """Get a :mod:`click` main function to use as a command line interface."""
         main = super().get_cli()
         cls._add_cli_export(main)
         return main
