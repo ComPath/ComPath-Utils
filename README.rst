@@ -1,12 +1,10 @@
-ComPath Utils |build| |coverage|
-================================
+ComPath Utils |build|
+=====================
 
-A repository containing abstract classes that all ComPath repos should extend in order to be automatically added to the web application.
+A repository containing abstract classes that all `Bio2BEL <https://github.com/bio2bel/>`_ packages should extend in order to be adapted to the Compath environement.
+
+
 
 .. |build| image:: https://travis-ci.org/ComPath/compath_utils.svg?branch=master
     :target: https://travis-ci.org/ComPath/compath_utils
     :alt: Build Status
-
-.. |coverage| image:: https://codecov.io/gh/ComPath/compath_utils/coverage.svg?branch=master
-    :target: https://codecov.io/gh/ComPath/compath_utils?branch=master
-    :alt: Coverage Status
