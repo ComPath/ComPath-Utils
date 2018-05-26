@@ -9,6 +9,7 @@ from collections import Counter
 
 import click
 from bio2bel import AbstractManager
+
 from compath_utils.exc import CompathManagerPathwayModelError, CompathManagerProteinModelError
 from compath_utils.utils import write_dict
 
@@ -190,7 +191,7 @@ class CompathManager(AbstractManager):
 
         return q.all()
 
-    def export_genesets(self):
+    def export_gene_sets(self):
         """Return pathway - genesets mapping"""
         return {
             pathway.name: {
@@ -228,7 +229,7 @@ class CompathManager(AbstractManager):
             """Export all pathway - gene info to a excel file"""
 
             # https://stackoverflow.com/questions/19736080/creating-dataframe-from-a-dictionary-where-entries-have-different-lengths
-            gene_sets_dict = manager.export_genesets()
+            gene_sets_dict = manager.export_gene_sets()
             write_dict(gene_sets_dict, directory, manager.module_name)
 
     @classmethod
