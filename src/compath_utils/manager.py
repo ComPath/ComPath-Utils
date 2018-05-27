@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-"""This module contains the abstract manager that all ComPath managers should extend"""
+"""This module contains the abstract manager that all ComPath managers should extend."""
 
 import itertools as itt
 import logging
@@ -69,7 +69,7 @@ class CompathManager(AbstractManager):
             self.protein_model.hgnc_symbol == hgnc_symbol).all()
 
     def query_gene_set(self, gene_set):
-        """Return pathway counter dictionary.
+        """Calculate the pathway counter dictionary.
 
         :param iter[str] gene_set: An iterable of HGNC gene symbols to be queried
         :rtype: dict[str,dict]
@@ -183,7 +183,6 @@ class CompathManager(AbstractManager):
         :param Optional[int] limit: limit result query
         :rtype: list[Pathway]
         """
-
         q = self.session.query(self.pathway_model).filter(self.pathway_model.name.contains(query))
 
         if limit:
@@ -192,7 +191,7 @@ class CompathManager(AbstractManager):
         return q.all()
 
     def export_gene_sets(self):
-        """Return pathway - genesets mapping"""
+        """Return the pathway - genesets mapping."""
         return {
             pathway.name: {
                 protein.hgnc_symbol
@@ -207,30 +206,28 @@ class CompathManager(AbstractManager):
         :rtype: collections.Counter
         :return: pathway sizes
         """
-        gene_counter = Counter()
-
-        for pathway in self.get_all_pathways():
-            if not pathway.proteins:
-                continue
-
-            for gene in pathway.proteins:
-                gene_counter[gene.hgnc_symbol] += 1
-
-        return gene_counter
+        return Counter(
+            gene.hgnc_symbol
+            for pathway in self.get_all_pathways()
+            if pathway.proteins
+            for gene in pathway.proteins
+        )
 
     @staticmethod
     def _add_cli_export(main):
-        """Adds the pathway export function to the CLI"""
+        """Add the pathway export function to the CLI."""
 
         @main.command()
         @click.option('-d', '--directory', default=os.getcwd(), help='Defaults to CWD')
         @click.pass_obj
-        def export(manager, directory):
+        def export_gene_sets(manager, directory):
             """Export all pathway - gene info to a excel file"""
 
             # https://stackoverflow.com/questions/19736080/creating-dataframe-from-a-dictionary-where-entries-have-different-lengths
             gene_sets_dict = manager.export_gene_sets()
             write_dict(gene_sets_dict, directory, manager.module_name)
+
+        return main
 
     @classmethod
     def get_cli(cls):
