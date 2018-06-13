@@ -68,6 +68,26 @@ class CompathManager(AbstractManager):
         return self.session.query(self.protein_model).filter(
             self.protein_model.hgnc_symbol == hgnc_symbol).all()
 
+    def query_similar_pathways(self, pathway_name, top=None):
+        """Filter pathways by name
+
+        :param str pathway_name: pathway name to query
+        :param int top: return only X entries
+        :return: Optional[models.Pathway]
+        """
+        similar_pathways = self.session.query(self.pathway_model).filter(
+            self.pathway_model.name.contains(pathway_name)).all()
+
+        similar_pathways = [
+            (pathway.resource_id, pathway.name)
+            for pathway in similar_pathways
+        ]
+
+        if top:
+            return similar_pathways[:top]
+
+        return similar_pathways
+
     def query_gene_set(self, gene_set):
         """Calculate the pathway counter dictionary.
 
