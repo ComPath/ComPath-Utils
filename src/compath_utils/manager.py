@@ -60,13 +60,28 @@ class CompathManager(AbstractManager):
         return self.session.query(self.protein_model).filter(self.protein_model.hgnc_symbol.in_(gene_set)).all()
 
     def query_protein_by_hgnc(self, hgnc_symbol):
-        """Return the proteins in the database within the gene set query.
+        """Return the proteins in the database matching a hgnc symbol.
 
         :param str hgnc_symbol: hgnc symbol
         :return: Optional[models.Protein]
         """
         return self.session.query(self.protein_model).filter(
             self.protein_model.hgnc_symbol == hgnc_symbol).all()
+
+    def query_similar_hgnc_symbol(self, hgnc_symbol, top=None):
+        """Filter genes by hgnc symbol.
+
+        :param str hgnc_symbol: hgnc_symbol to query
+        :param int top: return only X entries
+        :return: Optional[models.Pathway]
+        """
+        similar_genes = self.session.query(self.protein_model).filter(
+            self.protein_model.hgnc_symbol.contains(hgnc_symbol)).all()
+
+        if top:
+            return similar_genes[:top]
+
+        return similar_genes
 
     def query_similar_pathways(self, pathway_name, top=None):
         """Filter pathways by name
@@ -87,6 +102,39 @@ class CompathManager(AbstractManager):
             return similar_pathways[:top]
 
         return similar_pathways
+
+    def query_gene(self, gene):
+        """Return the pathways associated with a gene.
+
+        :param str gene: HGNC gene symbol
+        :rtype: dict[str,dict]
+        :return: Optional[list] associated with the gene
+        """
+        genes = self.query_protein_by_hgnc(gene)
+
+        if not genes:
+            return None
+
+        pathways_lists = [
+            gene.get_pathways_ids()
+            for gene in genes
+        ]
+
+        # Flat lists
+        pathways_lists = itt.chain(*pathways_lists)
+
+        enrichment_results = []
+
+        for pathway_id in pathways_lists:
+            pathway = self.get_pathway_by_id(pathway_id)
+
+            pathway_gene_set = pathway.get_gene_set()  # Pathway gene set
+
+            enrichment_results.append(
+                (pathway_id, pathway.name, len(pathway_gene_set))
+            )
+
+        return enrichment_results
 
     def query_gene_set(self, gene_set):
         """Calculate the pathway counter dictionary.
