@@ -21,7 +21,7 @@ log = logging.getLogger(__name__)
 
 
 class CompathManager(AbstractManager):
-    """This is the abstract class that all ComPath managers should extend"""
+    """This is the abstract class that all ComPath managers should extend."""
 
     #: The standard pathway SQLAlchemy model
     pathway_model = None
@@ -299,7 +299,10 @@ class CompathManager(AbstractManager):
 
     @classmethod
     def get_cli(cls):
-        """Get a :mod:`click` main function to use as a command line interface."""
+        """Get a :mod:`click` main function to use as a command line interface.
+
+        :rtype: click.core.Group
+        """
         main = super().get_cli()
         cls._add_cli_export(main)
         return main
