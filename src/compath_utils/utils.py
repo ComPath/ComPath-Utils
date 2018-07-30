@@ -7,29 +7,27 @@ import os
 
 from pandas import DataFrame, Series
 
-log = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
-def dict_to_df(d):
-    """Convert a dictionary to a dataframe.
+def dict_to_df(data):
+    """Convert a dictionary to a DataFrame.
 
-    :type d: dict
+    :type data: dict
     :rtype: pandas.DataFrame
     """
-    return DataFrame(
-        dict([
-            (k, Series(list(v)))
-            for k, v in d.items()
-        ])
-    )
+    return DataFrame({
+        key: Series(list(values))
+        for key, values in data.items()
+    })
 
 
-def write_dict(d, directory, module_name):
+def write_dict(data, directory, module_name):
     """Write a dictionary to a file as an Excel document."""
-    gene_sets_df = dict_to_df(d)
+    gene_sets_df = dict_to_df(data)
 
     path = os.path.join(directory, '{}_gene_sets.xlsx'.format(module_name))
 
-    log.info("Gene sets exported to '{}".format(path))
+    logger.info("Gene sets exported to %s", path)
 
     gene_sets_df.to_excel(path, index=False)
