@@ -4,10 +4,9 @@
 
 import unittest
 
+from bio2bel.testing import TemporaryConnectionMethodMixin
 from compath_utils import CompathManager, CompathManagerPathwayModelError, CompathManagerProteinModelError
 from sqlalchemy.ext.declarative import declarative_base
-
-from bio2bel.testing import TemporaryConnectionMethodMixin
 
 Base = declarative_base()
 
@@ -40,11 +39,13 @@ class ManagerMissingPathway(ManagerMissingFunctions):
 
 class ManagerMissingProtein(ManagerMissingPathway):
     """A bad implementation of a manager that is missing the protein model."""
+
     pathway_model = object()
 
 
 class ManagerOkay(ManagerMissingProtein):
     """An example of a good implementation of a manager."""
+
     protein_model = object()
 
 
@@ -62,7 +63,7 @@ class TestManagerFailures(unittest.TestCase):
             ManagerMissingPathway()
 
     def test_protein_model_error(self):
-        """Tests an error is thrown when the protein model is not defined."""
+        """Test an error is thrown when the protein model is not defined."""
         with self.assertRaises(CompathManagerProteinModelError):
             ManagerMissingProtein()
 

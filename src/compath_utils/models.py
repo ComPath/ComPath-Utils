@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+"""An abstract pathway for a ComPath repository."""
+
 from abc import ABC, abstractmethod
 
 __all__ = [
@@ -8,11 +10,13 @@ __all__ = [
 
 
 class ComPathPathway(ABC):
-    """This is the abstract class that the Pathway model in a ComPath repository should extend"""
+    """This is the abstract class that the Pathway model in a ComPath repository should extend."""
 
     @abstractmethod
     def get_gene_set(self):
-        """Return the genes associated with the pathway (gene set). Note this function restricts to HGNC symbols genes
+        """Return the genes associated with the pathway (gene set).
+
+        Note this function restricts to HGNC symbols genes.
 
         :return: Return a set of protein models that all have names
         """
@@ -20,15 +24,14 @@ class ComPathPathway(ABC):
     @property
     @abstractmethod
     def resource_id(self):
-        """Return the database-specific resource identifier (will be a SQLAlchemy Column instance)"""
+        """Return the database-specific resource identifier (will be a SQLAlchemy Column instance)."""
 
     @property
     @abstractmethod
     def url(self):
-        """Return the URL to the resource, usually based in the identifer for this pathway
+        """Return the URL to the resource, usually based in the identifier for this pathway.
 
         :rtype: str
-
 
         Example for WikiPathways:
 

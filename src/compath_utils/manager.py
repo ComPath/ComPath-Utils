@@ -2,14 +2,13 @@
 
 """This module contains the abstract manager that all ComPath managers should extend."""
 
+from collections import Counter
 import itertools as itt
 import logging
 import os
-from collections import Counter
 
-import click
 from bio2bel import AbstractManager
-
+import click
 from compath_utils.exc import CompathManagerPathwayModelError, CompathManagerProteinModelError
 from compath_utils.utils import write_dict
 
@@ -33,7 +32,7 @@ class CompathManager(AbstractManager):
     protein_model = None
 
     def __init__(self, *args, **kwargs):
-        """Doesn't let this class get instantiated if the pathway_model"""
+        """Doesn't let this class get instantiated if the pathway_model."""
         if self.pathway_model is None:
             raise CompathManagerPathwayModelError('did not set class-level variable pathway_model')
 
@@ -48,7 +47,7 @@ class CompathManager(AbstractManager):
         super().__init__(*args, **kwargs)
 
     def is_populated(self):
-        """Check if the database is already poulated."""
+        """Check if the database is already populated."""
         return 0 < self._count_model(self.pathway_model)
 
     def _query_proteins_in_hgnc_list(self, gene_set):
@@ -84,7 +83,7 @@ class CompathManager(AbstractManager):
         return similar_genes
 
     def query_similar_pathways(self, pathway_name, top=None):
-        """Filter pathways by name
+        """Filter pathways by name.
 
         :param str pathway_name: pathway name to query
         :param int top: return only X entries
@@ -235,7 +234,6 @@ class CompathManager(AbstractManager):
         :rtype: dict
         :return: pathway sizes
         """
-
         pathways = self.get_all_pathways()
 
         return {
@@ -284,13 +282,11 @@ class CompathManager(AbstractManager):
     @staticmethod
     def _add_cli_export(main):
         """Add the pathway export function to the CLI."""
-
         @main.command()
         @click.option('-d', '--directory', default=os.getcwd(), help='Defaults to CWD')
         @click.pass_obj
         def export_gene_sets(manager, directory):
-            """Export all pathway - gene info to a excel file"""
-
+            """Export all pathway - gene info to a excel file."""
             # https://stackoverflow.com/questions/19736080/creating-dataframe-from-a-dictionary-where-entries-have-different-lengths
             gene_sets_dict = manager.export_gene_sets()
             write_dict(gene_sets_dict, directory, manager.module_name)

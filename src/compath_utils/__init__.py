@@ -39,9 +39,9 @@ Testing
 ComPath Utils is tested with Python3 on Linux using `Travis CI <https://travis-ci.org/compath/compath_utils>`_.
 """
 
-from compath_utils.exc import *
-from compath_utils.manager import *
-from compath_utils.models import *
+from compath_utils.exc import *  # noqa: F401, F403
+from compath_utils.manager import *  # noqa: F401, F403
+from compath_utils.models import *  # noqa: F401, F403
 
 __version__ = '0.0.9-dev'
 
