@@ -43,7 +43,7 @@ from compath_utils.exc import *  # noqa: F401, F403
 from compath_utils.manager import *  # noqa: F401, F403
 from compath_utils.models import *  # noqa: F401, F403
 
-__version__ = '0.1.0'
+__version__ = '0.1.1-dev'
 
 __title__ = 'compath_utils'
 __description__ = "A utilities package for ComPath"
