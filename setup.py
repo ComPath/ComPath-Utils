@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-"""Setup.py for ComPath Utilities"""
+"""Setup.py for ComPath Utilities."""
 
 import codecs
 import os
@@ -23,7 +23,7 @@ CLASSIFIERS = [
     'Topic :: Scientific/Engineering :: Bio-Informatics'
 ]
 INSTALL_REQUIRES = [
-    'bio2bel>=0.0.9',
+    'bio2bel>=0.1.0',
     'sqlalchemy',
     'pandas',
     'click',
