@@ -41,8 +41,21 @@ class ManagerMissingPathway(ManagerMissingFunctions):
         """Summarize the database."""
         pass
 
+    def to_bel(self):
+        """Export as BEL"""
+        pass
+
     def query_gene_set(self, gene_set):
         """Find pathways with genes in the given set."""
+        pass
+
+    def _create_namespace_entry_from_model(self, model, namespace):
+        """Create a namespace entry."""
+        pass
+
+    @staticmethod
+    def _get_identifier(model):
+        """Get the identifier from a model."""
         pass
 
 
