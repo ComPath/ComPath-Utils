@@ -42,6 +42,12 @@ class CompathManager(AbstractManager, BELNamespaceManagerMixin, BELManagerMixin,
         if self.pathway_model is None:
             raise CompathManagerPathwayModelError('did not set class-level variable pathway_model')
 
+        if not self.namespace_model or self.namespace_model is ...:  # set namespace model if not already set
+            self.namespace_model = self.pathway_model
+
+        if not self.flask_admin_models or self.flask_admin_models is ...:  # set flask models if not already set
+            self.flask_admin_models = [self.pathway_model, self.protein_model]
+
         # TODO use hasattr on class for checking this
         # if self.pathway_model_identifier_column is None:
         #     raise CompathManagerPathwayIdentifierError(
