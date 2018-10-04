@@ -1,5 +1,5 @@
-ComPath Utils |build| |coverage|
-================================
+ComPath Utils |build| |docs|
+============================
 A repository containing abstract classes that all `Bio2BEL <https://github.com/bio2bel/>`_ packages should extend
 in order to be adapted to the ComPath environment.
 
@@ -23,9 +23,9 @@ or from the latest code on `GitHub <https://github.com/Compath/compath_utils>`_ 
     :target: https://travis-ci.org/ComPath/compath_utils
     :alt: Build Status
 
-.. |coverage| image:: https://codecov.io/gh/ComPath/compath_utils/coverage.svg?branch=master
-    :target: https://codecov.io/gh/ComPath/compath_utils?branch=master
-    :alt: Coverage Status
+.. |docs| image:: http://readthedocs.org/projects/compath_utils/badge/?version=latest
+    :target: https://compath_utils.readthedocs.io/en/latest/
+    :alt: Documentation Status
 
 .. |climate| image:: https://codeclimate.com/github/ComPath/compath_utils/badges/gpa.svg
     :target: https://codeclimate.com/github/ComPath/compath_utils
