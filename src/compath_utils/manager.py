@@ -2,15 +2,21 @@
 
 """This module contains the abstract manager that all ComPath managers should extend."""
 
-from collections import Counter
-import itertools as itt
 import logging
 import os
+from collections import Counter
+from typing import Iterable, List, Mapping, Optional, Set, Tuple
+
+import click
+import itertools as itt
 
 from bio2bel import AbstractManager
-import click
-from compath_utils.exc import CompathManagerPathwayModelError, CompathManagerProteinModelError
-from compath_utils.utils import write_dict
+from bio2bel.manager.bel_manager import BELManagerMixin
+from bio2bel.manager.flask_manager import FlaskMixin
+from bio2bel.manager.namespace_manager import BELNamespaceManagerMixin
+from .exc import CompathManagerPathwayModelError, CompathManagerProteinModelError
+from .models import ComPathPathway
+from .utils import write_dict
 
 __all__ = [
     'CompathManager',
@@ -19,17 +25,17 @@ __all__ = [
 log = logging.getLogger(__name__)
 
 
-class CompathManager(AbstractManager):
+class CompathManager(AbstractManager, BELNamespaceManagerMixin, BELManagerMixin, FlaskMixin):
     """This is the abstract class that all ComPath managers should extend."""
 
     #: The standard pathway SQLAlchemy model
-    pathway_model = None
+    pathway_model: ComPathPathway = None
 
     #: Put the standard database identifier (ex wikipathways_id or kegg_id)
     pathway_model_identifier_column = None
 
     #: The standard protein SQLAlchemy model
-    protein_model = None
+    protein_model: ComPathPathway = None
 
     def __init__(self, *args, **kwargs):
         """Doesn't let this class get instantiated if the pathway_model."""
@@ -46,51 +52,51 @@ class CompathManager(AbstractManager):
 
         super().__init__(*args, **kwargs)
 
-    def is_populated(self):
+    def is_populated(self) -> bool:
         """Check if the database is already populated."""
         return 0 < self._count_model(self.pathway_model)
 
-    def _query_proteins_in_hgnc_list(self, gene_set):
+    def _query_pathway(self):
+        return self.session.query(self.pathway_model)
+
+    def _query_protein(self):
+        return self.session.query(self.protein_model)
+
+    def _query_proteins_in_hgnc_list(self, gene_set: Iterable[str]) -> List[protein_model]:
         """Return the proteins in the database within the gene set query.
 
-        :param list[str] gene_set: hgnc symbol lists
+        :param gene_set: hgnc symbol lists
         :return: list of proteins models
         """
-        return self.session.query(self.protein_model).filter(self.protein_model.hgnc_symbol.in_(gene_set)).all()
+        return self._query_protein().filter(self.protein_model.hgnc_symbol.in_(gene_set)).all()
 
-    def query_protein_by_hgnc(self, hgnc_symbol):
+    def query_protein_by_hgnc(self, hgnc_symbol: str) -> List[protein_model]:
         """Return the proteins in the database matching a hgnc symbol.
 
-        :param str hgnc_symbol: hgnc symbol
-        :return: Optional[models.Protein]
+        :param hgnc_symbol: hgnc symbol
         """
-        return self.session.query(self.protein_model).filter(
-            self.protein_model.hgnc_symbol == hgnc_symbol).all()
+        return self._query_protein().filter(self.protein_model.hgnc_symbol == hgnc_symbol).all()
 
-    def query_similar_hgnc_symbol(self, hgnc_symbol, top=None):
+    def query_similar_hgnc_symbol(self, hgnc_symbol: str, top: Optional[int] = None) -> Optional[pathway_model]:
         """Filter genes by hgnc symbol.
 
-        :param str hgnc_symbol: hgnc_symbol to query
-        :param int top: return only X entries
-        :return: Optional[models.Pathway]
+        :param hgnc_symbol: hgnc_symbol to query
+        :param top: return only X entries
         """
-        similar_genes = self.session.query(self.protein_model).filter(
-            self.protein_model.hgnc_symbol.contains(hgnc_symbol)).all()
+        similar_genes = self._query_protein().filter(self.protein_model.hgnc_symbol.contains(hgnc_symbol)).all()
 
         if top:
             return similar_genes[:top]
 
         return similar_genes
 
-    def query_similar_pathways(self, pathway_name, top=None):
+    def query_similar_pathways(self, pathway_name: str, top: Optional[int] = None) -> List[Tuple[str, str]]:
         """Filter pathways by name.
 
-        :param str pathway_name: pathway name to query
-        :param int top: return only X entries
-        :return: Optional[models.Pathway]
+        :param pathway_name: pathway name to query
+        :param top: return only X entries
         """
-        similar_pathways = self.session.query(self.pathway_model).filter(
-            self.pathway_model.name.contains(pathway_name)).all()
+        similar_pathways = self._query_pathway().filter(self.pathway_model.name.contains(pathway_name)).all()
 
         similar_pathways = [
             (pathway.resource_id, pathway.name)
@@ -102,47 +108,35 @@ class CompathManager(AbstractManager):
 
         return similar_pathways
 
-    def query_gene(self, gene):
+    def query_gene(self, hgnc_gene_symbol: str) -> List[Tuple[str, str, int]]:
         """Return the pathways associated with a gene.
 
-        :param str gene: HGNC gene symbol
-        :rtype: dict[str,dict]
-        :return: Optional[list] associated with the gene
+        :param hgnc_gene_symbol: HGNC gene symbol
+        :return:  associated with the gene
         """
-        genes = self.query_protein_by_hgnc(gene)
-
-        if not genes:
-            return None
-
-        pathways_lists = [
+        pathway_ids = set(itt.chain.from_iterable(
             gene.get_pathways_ids()
-            for gene in genes
-        ]
-
-        # Flat lists
-        pathways_lists = itt.chain(*pathways_lists)
+            for gene in self.query_protein_by_hgnc(hgnc_gene_symbol)
+        ))
 
         enrichment_results = []
 
-        for pathway_id in pathways_lists:
+        for pathway_id in pathway_ids:
             pathway = self.get_pathway_by_id(pathway_id)
 
             pathway_gene_set = pathway.get_gene_set()  # Pathway gene set
 
-            enrichment_results.append(
-                (pathway_id, pathway.name, len(pathway_gene_set))
-            )
+            enrichment_results.append((pathway_id, pathway.name, len(pathway_gene_set)))
 
         return enrichment_results
 
-    def query_gene_set(self, gene_set):
+    def query_gene_set(self, hgnc_gene_symbols: Iterable[str]) -> Mapping[str, Mapping]:
         """Calculate the pathway counter dictionary.
 
-        :param iter[str] gene_set: An iterable of HGNC gene symbols to be queried
-        :rtype: dict[str,dict]
+        :param hgnc_gene_symbols: An iterable of HGNC gene symbols to be queried
         :return: Enriched pathways with mapped pathways/total
         """
-        proteins = self._query_proteins_in_hgnc_list(gene_set)
+        proteins = self._query_proteins_in_hgnc_list(hgnc_gene_symbols)
 
         pathways_lists = [
             protein.get_pathways_ids()
@@ -170,57 +164,42 @@ class CompathManager(AbstractManager):
         return enrichment_results
 
     @classmethod
-    def _standard_pathway_identifier_filter(cls, pathway_id):
-        """Get a SQLAlchemy filter for the standard pathway identifier.
-
-        :param str pathway_id:
-        """
+    def _standard_pathway_identifier_filter(cls, pathway_id: str):
+        """Get a SQLAlchemy filter for the standard pathway identifier."""
         return cls.pathway_model_identifier_column == pathway_id
 
-    def get_pathway_by_id(self, pathway_id):
+    def get_pathway_by_id(self, pathway_id: str) -> Optional[pathway_model]:
         """Get a pathway by its database-specific identifier. Not to be confused with the standard column called "id".
 
         :param pathway_id: Pathway identifier
-        :rtype: Optional[Pathway]
         """
-        return self.session.query(self.pathway_model).filter(
-            self._standard_pathway_identifier_filter(pathway_id)).one_or_none()
+        return self._query_pathway().filter(self._standard_pathway_identifier_filter(pathway_id)).one_or_none()
 
-    def get_pathway_by_name(self, pathway_name):
+    def get_pathway_by_name(self, pathway_name: str) -> Optional[pathway_model]:
         """Get a pathway by its database-specific name.
 
         :param pathway_name: Pathway name
-        :rtype: Optional[Pathway]
         """
-        pathways = self.session.query(self.pathway_model).filter(self.pathway_model.name == pathway_name).all()
+        pathways = self._query_pathway().filter(self.pathway_model.name == pathway_name).all()
 
         if not pathways:
             return None
 
         return pathways[0]
 
-    def get_all_pathways(self):
-        """Get all pathways stored in the database.
+    def get_all_pathways(self) -> List[pathway_model]:
+        """Get all pathways stored in the database."""
+        return self._query_pathway().all()
 
-        :rtype: list[Pathway]
-        """
-        return self.session.query(self.pathway_model).all()
-
-    def get_all_pathway_names(self):
-        """Get all pathway names stored in the database.
-
-        :rtype: list[str]
-        """
+    def get_all_pathway_names(self) -> List[str]:
+        """Get all pathway names stored in the database."""
         return [
             pathway.name
-            for pathway in self.session.query(self.pathway_model).all()
+            for pathway in self._query_pathway().all()
         ]
 
-    def get_all_hgnc_symbols(self):
-        """Return the set of genes present in all Pathways.
-
-        :rtype: set
-        """
+    def get_all_hgnc_symbols(self) -> Set[str]:
+        """Return the set of genes present in all Pathways."""
         return {
             gene.hgnc_symbol
             for pathway in self.get_all_pathways()
@@ -228,10 +207,9 @@ class CompathManager(AbstractManager):
             if pathway.proteins
         }
 
-    def get_pathway_size_distribution(self):
+    def get_pathway_size_distribution(self) -> Mapping[str, int]:
         """Return pathway sizes.
 
-        :rtype: dict
         :return: pathway sizes
         """
         pathways = self.get_all_pathways()
@@ -242,34 +220,32 @@ class CompathManager(AbstractManager):
             if pathway.proteins
         }
 
-    def query_pathway_by_name(self, query, limit=None):
+    def query_pathway_by_name(self, query: str, limit: Optional[int] = None) -> List[pathway_model]:
         """Return all pathways having the query in their names.
 
         :param query: query string
-        :param Optional[int] limit: limit result query
-        :rtype: list[Pathway]
+        :param limit: limit result query
         """
-        q = self.session.query(self.pathway_model).filter(self.pathway_model.name.contains(query))
+        q = self._query_pathway().filter(self.pathway_model.name.contains(query))
 
         if limit:
             q = q.limit(limit)
 
         return q.all()
 
-    def export_gene_sets(self):
+    def export_gene_sets(self) -> Mapping[str, Set[str]]:
         """Return the pathway - genesets mapping."""
         return {
             pathway.name: {
                 protein.hgnc_symbol
                 for protein in pathway.proteins
             }
-            for pathway in self.session.query(self.pathway_model).all()
+            for pathway in self._query_pathway().all()
         }
 
-    def get_gene_distribution(self):
+    def get_gene_distribution(self) -> Counter:
         """Return the proteins in the database within the gene set query.
 
-        :rtype: collections.Counter
         :return: pathway sizes
         """
         return Counter(
@@ -280,8 +256,9 @@ class CompathManager(AbstractManager):
         )
 
     @staticmethod
-    def _add_cli_export(main):
+    def _add_cli_export(main: click.Group) -> click.Group:
         """Add the pathway export function to the CLI."""
+
         @main.command()
         @click.option('-d', '--directory', default=os.getcwd(), help='Defaults to CWD')
         @click.pass_obj
@@ -289,16 +266,14 @@ class CompathManager(AbstractManager):
             """Export all pathway - gene info to a excel file."""
             # https://stackoverflow.com/questions/19736080/creating-dataframe-from-a-dictionary-where-entries-have-different-lengths
             gene_sets_dict = manager.export_gene_sets()
-            write_dict(gene_sets_dict, directory, manager.module_name)
+            path = os.path.join(directory, f'{manager.module_name}_gene_sets.xlsx')
+            write_dict(gene_sets_dict, path)
 
         return main
 
     @classmethod
-    def get_cli(cls):
-        """Get a :mod:`click` main function to use as a command line interface.
-
-        :rtype: click.core.Group
-        """
+    def get_cli(cls) -> click.Group:
+        """Get a :mod:`click` main function to use as a command line interface."""
         main = super().get_cli()
         cls._add_cli_export(main)
         return main

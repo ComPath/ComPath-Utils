@@ -4,9 +4,10 @@
 
 import unittest
 
+from sqlalchemy.ext.declarative import declarative_base
+
 from bio2bel.testing import TemporaryConnectionMethodMixin
 from compath_utils import CompathManager, CompathManagerPathwayModelError, CompathManagerProteinModelError
-from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
 

@@ -13,7 +13,9 @@ jobs:
     - stage: lint
       env: TOXENV=manifest
     - env: TOXENV=flake8
-    - env: TOXENV=pylint
+    - env: TOXENV=vulture
+    - env: TOXENV=mypy
+    - env: TOXENV=pyroma
     # docs stage
     - stage: docs
       env: TOXENV=doc8
@@ -24,12 +26,13 @@ jobs:
       env: TOXENV=py
 matrix:
   allow_failures:
-      - env: TOXENV=pylint
+      - env: TOXENV=vulture
+      - env: TOXENV=mypy
 install:
-  - sh -c 'if [ "$TOXENV" = "py" ]; then pip install tox codecov; else pip install tox; fi'
+    - sh -c 'if [ "$TOXENV" = "py" ]; then pip install tox codecov; else pip install tox; fi'
 script:
-  - travis_wait 45 tox
+- tox
 after_success:
-  - sh -c 'if [ "$TOXENV" = "py" ]; then tox -e coverage-report; codecov; fi'
+    - sh -c 'if [ "$TOXENV" = "py" ]; then tox -e coverage-report; codecov; fi'
 notifications:
   slack: pybel:n2KbWKBum3musnBg3L76gGwq

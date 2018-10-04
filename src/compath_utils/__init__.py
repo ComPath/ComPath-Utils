@@ -13,7 +13,7 @@ Download the latest stable code from `PyPI <https://pypi.org/compath_utils>`_ wi
 
 .. code-block:: sh
 
-   $ python3 -m pip install compath_utils
+   $ python3 -m pip install compath-utils
 
 Get the Latest
 ~~~~~~~~~~~~~~~
@@ -32,7 +32,6 @@ Clone the repository from `GitHub <https://github.com/compath/compath_utils>`_ a
    $ git clone https://github.com/compath/compath_utils.git
    $ cd compath_utils
    $ python3 -m pip install -e .
-
 
 Testing
 -------
