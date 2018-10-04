@@ -4,13 +4,19 @@
 
 from abc import ABC, abstractmethod
 
+from sqlalchemy import Column
+from sqlalchemy.ext.declarative import DeclarativeMeta
+
 __all__ = [
     'ComPathPathway',
 ]
 
 
-class ComPathPathway(ABC):
+class ComPathPathway(ABC, DeclarativeMeta):
     """This is the abstract class that the Pathway model in a ComPath repository should extend."""
+
+    name: Column
+    hgnc_symbol: Column
 
     @abstractmethod
     def get_gene_set(self):
