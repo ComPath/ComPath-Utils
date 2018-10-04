@@ -19,16 +19,24 @@ CLASSIFIERS = [
     'License :: OSI Approved :: MIT License',
     'Operating System :: OS Independent',
     'Programming Language :: Python',
+    'Programming Language :: Python :: 3 :: Only',
     'Programming Language :: Python :: 3.6',
+    'Programming Language :: Python :: 3.7',
     'Topic :: Scientific/Engineering :: Bio-Informatics'
 ]
 INSTALL_REQUIRES = [
     'bio2bel>=0.1.4',
+    'pybel',
     'sqlalchemy',
     'pandas',
     'click',
 ]
-EXTRAS_REQUIRE = {}
+EXTRAS_REQUIRE = {
+    'docs': [
+        'sphinx',
+        'sphinx-rtd-theme',
+    ]
+}
 ENTRY_POINTS = {}
 
 HERE = os.path.abspath(os.path.dirname(__file__))

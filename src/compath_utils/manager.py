@@ -2,20 +2,21 @@
 
 """This module contains the abstract manager that all ComPath managers should extend."""
 
+import itertools as itt
 import logging
 import os
 from collections import Counter
-from typing import Iterable, List, Mapping, Optional, Set, Tuple
+from typing import Iterable, List, Mapping, Optional, Set, Tuple, Type
 
 import click
-import itertools as itt
 
 from bio2bel import AbstractManager
 from bio2bel.manager.bel_manager import BELManagerMixin
 from bio2bel.manager.flask_manager import FlaskMixin
 from bio2bel.manager.namespace_manager import BELNamespaceManagerMixin
+from pybel import BELGraph
 from .exc import CompathManagerPathwayModelError, CompathManagerProteinModelError
-from .models import ComPathPathway
+from .models import CompathPathway, CompathProtein
 from .utils import write_dict
 
 __all__ = [
@@ -29,32 +30,36 @@ class CompathManager(AbstractManager, BELNamespaceManagerMixin, BELManagerMixin,
     """This is the abstract class that all ComPath managers should extend."""
 
     #: The standard pathway SQLAlchemy model
-    pathway_model: ComPathPathway = None
+    pathway_model: Type[CompathPathway] = None
 
     #: Put the standard database identifier (ex wikipathways_id or kegg_id)
     pathway_model_identifier_column = None
 
     #: The standard protein SQLAlchemy model
-    protein_model: ComPathPathway = None
+    protein_model: Type[CompathProtein] = None
 
     def __init__(self, *args, **kwargs):
         """Doesn't let this class get instantiated if the pathway_model."""
-        if self.pathway_model is None:
+        if not self.pathway_model or self.pathway_model is ...:
             raise CompathManagerPathwayModelError('did not set class-level variable pathway_model')
+        # if not issubclass(self.pathway_model, CompathPathway):
+        #    raise TypeError('pathway_model should inherit from compath_utils.models.ComPathPathway')
 
         if not self.namespace_model or self.namespace_model is ...:  # set namespace model if not already set
             self.namespace_model = self.pathway_model
-
-        if not self.flask_admin_models or self.flask_admin_models is ...:  # set flask models if not already set
-            self.flask_admin_models = [self.pathway_model, self.protein_model]
 
         # TODO use hasattr on class for checking this
         # if self.pathway_model_identifier_column is None:
         #     raise CompathManagerPathwayIdentifierError(
         #         'did not set class-level variable pathway_model_standard_identifer')
 
-        if self.protein_model is None:
+        if not self.protein_model or self.protein_model is ...:
             raise CompathManagerProteinModelError('did not set class-level variable protein_model')
+        # if not issubclass(self.protein_model, CompathProtein):
+        #    raise TypeError('protein_model should inherit from compath_utils.models.ComPathProtein')
+
+        if not self.flask_admin_models or self.flask_admin_models is ...:  # set flask models if not already set
+            self.flask_admin_models = [self.pathway_model, self.protein_model]
 
         super().__init__(*args, **kwargs)
 
@@ -65,8 +70,38 @@ class CompathManager(AbstractManager, BELNamespaceManagerMixin, BELManagerMixin,
     def _query_pathway(self):
         return self.session.query(self.pathway_model)
 
+    def count_pathways(self) -> int:
+        """Count the pathways in the database."""
+        return self._query_pathway().count()
+
+    def list_pathways(self) -> List[pathway_model]:
+        """List the pathways in the database."""
+        return self._query_pathway().all()
+
     def _query_protein(self):
         return self.session.query(self.protein_model)
+
+    def count_proteins(self) -> int:
+        """Count the proteins in the database."""
+        return self._query_protein().count()
+
+    def list_proteins(self) -> List[protein_model]:
+        """List the proteins in the database."""
+        return self._query_protein().all()
+
+    def get_protein_by_hgnc_symbol(self, hgnc_symbol: str) -> Optional[protein_model]:
+        """Get a protein by its HGNC gene symbol.
+
+        :param hgnc_id: hgnc identifier
+        """
+        return self._query_protein().filter(self.protein_model.hgnc_symbol == hgnc_symbol).one_or_none()
+
+    def summarize(self) -> Mapping[str, int]:
+        """Summarize the database."""
+        return dict(
+            pathways=self.count_pathways(),
+            proteins=self.count_proteins(),
+        )
 
     def _query_proteins_in_hgnc_list(self, gene_set: Iterable[str]) -> List[protein_model]:
         """Return the proteins in the database within the gene set query.
@@ -76,12 +111,7 @@ class CompathManager(AbstractManager, BELNamespaceManagerMixin, BELManagerMixin,
         """
         return self._query_protein().filter(self.protein_model.hgnc_symbol.in_(gene_set)).all()
 
-    def query_protein_by_hgnc(self, hgnc_symbol: str) -> List[protein_model]:
-        """Return the proteins in the database matching a hgnc symbol.
 
-        :param hgnc_symbol: hgnc symbol
-        """
-        return self._query_protein().filter(self.protein_model.hgnc_symbol == hgnc_symbol).all()
 
     def query_similar_hgnc_symbol(self, hgnc_symbol: str, top: Optional[int] = None) -> Optional[pathway_model]:
         """Filter genes by hgnc symbol.
@@ -118,20 +148,17 @@ class CompathManager(AbstractManager, BELNamespaceManagerMixin, BELManagerMixin,
         """Return the pathways associated with a gene.
 
         :param hgnc_gene_symbol: HGNC gene symbol
-        :return:  associated with the gene
+        :return: associated with the gene
         """
-        pathway_ids = set(itt.chain.from_iterable(
-            gene.get_pathways_ids()
-            for gene in self.query_protein_by_hgnc(hgnc_gene_symbol)
-        ))
-
+        protein = self.get_protein_by_hgnc_symbol(hgnc_gene_symbol)
+        pathway_ids = protein.get_pathways_ids()
         enrichment_results = []
 
         for pathway_id in pathway_ids:
             pathway = self.get_pathway_by_id(pathway_id)
-
+            if pathway is None:
+                continue
             pathway_gene_set = pathway.get_gene_set()  # Pathway gene set
-
             enrichment_results.append((pathway_id, pathway.name, len(pathway_gene_set)))
 
         return enrichment_results
@@ -150,7 +177,7 @@ class CompathManager(AbstractManager, BELNamespaceManagerMixin, BELManagerMixin,
         ]
 
         # Flat the pathways lists and applies Counter to get the number matches in every mapped pathway
-        pathway_counter = Counter(itt.chain(*pathways_lists))
+        pathway_counter = Counter(itt.chain.from_iterable(pathways_lists))
 
         enrichment_results = dict()
 
@@ -262,7 +289,7 @@ class CompathManager(AbstractManager, BELNamespaceManagerMixin, BELManagerMixin,
         )
 
     @staticmethod
-    def _add_cli_export(main: click.Group) -> click.Group:
+    def _add_cli_export(main: click.Group) -> click.Group:  # noqa: D202
         """Add the pathway export function to the CLI."""
 
         @main.command()
@@ -283,3 +310,35 @@ class CompathManager(AbstractManager, BELNamespaceManagerMixin, BELManagerMixin,
         main = super().get_cli()
         cls._add_cli_export(main)
         return main
+
+    def get_pathway_graph(self, pathway_id: str) -> Optional[BELGraph]:
+        """Return a new graph corresponding to the pathway.
+
+        :param pathway_id: A pathway identifier
+        """
+        pathway = self.get_pathway_by_id(pathway_id)
+        if pathway is None:
+            return None
+
+        graph = BELGraph(name=f'{pathway.name} graph')
+        self._add_pathway_to_graph(graph, pathway)
+        return graph
+
+    def to_bel(self) -> BELGraph:
+        """Serialize the database as BEL."""
+        graph = BELGraph(
+            name=f'Pathway Definitions from bio2bel_{self.module_name}',
+            version='1.0.0',
+        )
+
+        for pathway in self._query_pathway():
+            self._add_pathway_to_graph(graph, pathway)
+
+        return graph
+
+    @staticmethod
+    def _add_pathway_to_graph(graph: BELGraph, pathway: pathway_model):
+        """Add a pathway to a BEL graph."""
+        pathway_node = pathway.to_pybel()
+        for protein in pathway.proteins:
+            graph.add_part_of(protein.to_pybel(), pathway_node)
