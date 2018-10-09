@@ -7,8 +7,8 @@ omit =
 
 [paths]
 source =
-    src/pybel
-    .tox/*/lib/python*/site-packages/compath_utils
+    src/compath_utils/
+    .tox/*/lib/python*/site-packages/compath_utils/
 
 [report]
 show_missing = True
