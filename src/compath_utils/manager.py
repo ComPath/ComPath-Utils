@@ -111,8 +111,6 @@ class CompathManager(AbstractManager, BELNamespaceManagerMixin, BELManagerMixin,
         """
         return self._query_protein().filter(self.protein_model.hgnc_symbol.in_(gene_set)).all()
 
-
-
     def query_similar_hgnc_symbol(self, hgnc_symbol: str, top: Optional[int] = None) -> Optional[pathway_model]:
         """Filter genes by hgnc symbol.
 
