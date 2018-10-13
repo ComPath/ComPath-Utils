@@ -9,12 +9,12 @@ from collections import Counter
 from typing import Iterable, List, Mapping, Optional, Set, Tuple, Type
 
 import click
-
 from bio2bel import AbstractManager
 from bio2bel.manager.bel_manager import BELManagerMixin
 from bio2bel.manager.flask_manager import FlaskMixin
 from bio2bel.manager.namespace_manager import BELNamespaceManagerMixin
 from pybel import BELGraph
+
 from .exc import CompathManagerPathwayModelError, CompathManagerProteinModelError
 from .models import CompathPathway, CompathProtein
 from .utils import write_dict
@@ -246,7 +246,7 @@ class CompathManager(AbstractManager, BELNamespaceManagerMixin, BELManagerMixin,
         pathways = self.get_all_pathways()
 
         return {
-            pathway.name: len(pathway.proteins)
+            (pathway.resource_id, pathway.name): len(pathway.proteins)
             for pathway in pathways
             if pathway.proteins
         }
