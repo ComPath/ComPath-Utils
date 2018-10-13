@@ -19,16 +19,16 @@ or from the latest code on `GitHub <https://github.com/Compath/compath_utils>`_ 
     $ python3 -m pip install git+https://github.com/ComPath/compath_utils.git@master
 
 
-.. |build| image:: https://travis-ci.org/ComPath/compath_utils.svg?branch=master
+.. |build| image:: https://travis-ci.org/ComPath/ComPath-Utils.svg?branch=master
     :target: https://travis-ci.org/ComPath/compath_utils
     :alt: Build Status
 
-.. |docs| image:: http://readthedocs.org/projects/compath_utils/badge/?version=latest
+.. |docs| image:: http://readthedocs.org/projects/ComPath-Utils/badge/?version=latest
     :target: https://compath_utils.readthedocs.io/en/latest/
     :alt: Documentation Status
 
-.. |climate| image:: https://codeclimate.com/github/ComPath/compath_utils/badges/gpa.svg
-    :target: https://codeclimate.com/github/ComPath/compath_utils
+.. |climate| image:: https://codeclimate.com/github/ComPath/ComPath-Utils/badges/gpa.svg
+    :target: https://codeclimate.com/github/ComPath/ComPath-Utils
     :alt: Code Climate
 
 .. |python_versions| image:: https://img.shields.io/pypi/pyversions/compath_utils.svg
