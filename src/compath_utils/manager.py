@@ -14,9 +14,7 @@ from bio2bel import AbstractManager
 from bio2bel.manager.bel_manager import BELManagerMixin
 from bio2bel.manager.flask_manager import FlaskMixin
 from bio2bel.manager.namespace_manager import BELNamespaceManagerMixin
-
 from pybel import BELGraph
-
 from .exc import CompathManagerPathwayModelError, CompathManagerProteinModelError
 from .models import CompathPathway, CompathProtein
 from .utils import write_dict
