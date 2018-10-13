@@ -246,7 +246,7 @@ class CompathManager(AbstractManager, BELNamespaceManagerMixin, BELManagerMixin,
         pathways = self.get_all_pathways()
 
         return {
-            (pathway.resource_id, pathway.name): len(pathway.proteins)
+            pathway.resource_id: [pathway.name, len(pathway.proteins)]
             for pathway in pathways
             if pathway.proteins
         }
