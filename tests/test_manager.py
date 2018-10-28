@@ -4,9 +4,11 @@
 
 import unittest
 
+from sqlalchemy import Column, ForeignKey, Integer, String, Table
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship
 
-from bio2bel.testing import TemporaryConnectionMethodMixin
+from bio2bel.testing import AbstractTemporaryCacheClassMixin
 from compath_utils import CompathManager, CompathManagerPathwayModelError, CompathManagerProteinModelError
 from compath_utils.models import CompathPathway, CompathProtein
 
@@ -60,12 +62,58 @@ class ManagerMissingPathway(ManagerMissingFunctions):
         pass
 
 
-class TestPathway(CompathPathway):
+TABLE_PREFIX = 'test'
+BAD_PATHWAY_TABLE_NAME = f'{TABLE_PREFIX}_bad_pathway'
+PATHWAY_TABLE_NAME = f'{TABLE_PREFIX}_pathway'
+PATHWAY_TABLE_HIERARCHY = f'{TABLE_PREFIX}_pathway_hierarchy'
+BAD_PROTEIN_TABLE_NAME = f'{TABLE_PREFIX}_bad_protein'
+PROTEIN_TABLE_NAME = f'{TABLE_PREFIX}_protein'
+PROTEIN_PATHWAY_TABLE = f'{TABLE_PREFIX}_protein_pathway'
+
+protein_pathway = Table(
+    PROTEIN_PATHWAY_TABLE,
+    Base.metadata,
+    Column('protein_id', Integer, ForeignKey(f'{PROTEIN_TABLE_NAME}.id'), primary_key=True),
+    Column('pathway_id', Integer, ForeignKey(f'{PATHWAY_TABLE_NAME}.id'), primary_key=True)
+)
+
+
+class BadTestProtein(Base):
+    """A test protein class."""
+
+    __tablename__ = BAD_PROTEIN_TABLE_NAME
+
+    id = Column(Integer, primary_key=True)
+    hgnc_symbol = Column(String(255), doc='HGNC gene symbol of the protein')
+
+
+class TestProtein(CompathProtein, Base):
+    """A test protein class."""
+
+    __tablename__ = PROTEIN_TABLE_NAME
+    id = Column(Integer, primary_key=True)
+    hgnc_symbol = Column(String(255), doc='HGNC gene symbol of the protein')
+
+class BadTestPathway(Base):
     """A test pathway class."""
 
+    __tablename__ = BAD_PATHWAY_TABLE_NAME
+    id = Column(Integer, primary_key=True)
 
-class TestProtein(CompathProtein):
-    """A test protein class."""
+class TestPathway(CompathPathway, Base):
+    """A test pathway class."""
+
+    __tablename__ = PATHWAY_TABLE_NAME
+    id = Column(Integer, primary_key=True)
+
+    test_id = Column(String(255), unique=True, nullable=False, index=True, doc='Test identifier of the pathway')
+    name = Column(String(255), doc='pathway name')
+
+    proteins = relationship(
+        TestProtein,
+        secondary=protein_pathway,
+        backref='pathways'
+    )
 
 
 class ManagerMissingProtein(ManagerMissingPathway):
@@ -74,10 +122,16 @@ class ManagerMissingProtein(ManagerMissingPathway):
     pathway_model = TestPathway
 
 
+class ManagerBadProtein(ManagerMissingProtein):
+    """An example of a manager with a bad protein."""
+
+    protein_model = BadTestProtein
+
+
 class ManagerOkay(ManagerMissingProtein):
     """An example of a good implementation of a manager."""
 
-    protein_model = TestPathway
+    protein_model = TestProtein
 
 
 class TestManagerFailures(unittest.TestCase):
@@ -98,10 +152,40 @@ class TestManagerFailures(unittest.TestCase):
         with self.assertRaises(CompathManagerProteinModelError):
             ManagerMissingProtein()
 
+    def test_bad_protein_model_error(self):
+        """Test an error is thrown when a bad protein model is defined."""
+        with self.assertRaises(TypeError):
+            ManagerBadProtein()
 
-class TestManager(TemporaryConnectionMethodMixin):
+
+class TestManager(AbstractTemporaryCacheClassMixin):
     """Tests for good managers."""
 
-    def test_instantiation(self):
-        """Test that a good implementation of the manager can be instantiated."""
-        ManagerOkay(connection=self.connection)
+    Manager = ManagerOkay
+    manager: ManagerOkay
+
+    @classmethod
+    def populate(cls):
+        """Populate the database."""
+        p1, p2, p3, p4 = [
+            TestProtein(hgnc_symbol=f'HGNC:{i}')
+            for i in range(4)
+        ]
+
+        b1, b2 = [
+            TestPathway(
+                test_id=f'test:{i}',
+                name=f'Pathway {i}',
+            )
+            for i in range(2)
+        ]
+        b1.proteins = [p1, p2, p3]
+        b2.proteins = [p3, p4]
+
+        cls.manager.session.add_all([p1, p2, p3, p4, b1, b2])
+        cls.manager.session.commit()
+
+    def test_counts(self):
+        """Test counting content in the database."""
+        self.assertEqual(4, self.manager.count_proteins())
+        self.assertEqual(2, self.manager.count_pathways())

@@ -2,13 +2,13 @@
 
 """This module contains the abstract manager that all ComPath managers should extend."""
 
-import itertools as itt
 import logging
 import os
 from collections import Counter
 from typing import Iterable, List, Mapping, Optional, Set, Tuple, Type
 
 import click
+import itertools as itt
 
 from bio2bel import AbstractManager
 from bio2bel.manager.bel_manager import BELManagerMixin
@@ -42,8 +42,8 @@ class CompathManager(AbstractManager, BELNamespaceManagerMixin, BELManagerMixin,
         """Doesn't let this class get instantiated if the pathway_model."""
         if not self.pathway_model or self.pathway_model is ...:
             raise CompathManagerPathwayModelError('did not set class-level variable pathway_model')
-        # if not issubclass(self.pathway_model, CompathPathway):
-        #    raise TypeError('pathway_model should inherit from compath_utils.models.ComPathPathway')
+        if not issubclass(self.pathway_model, CompathPathway):
+            raise TypeError('pathway_model should inherit from compath_utils.models.ComPathPathway')
 
         if not self.namespace_model or self.namespace_model is ...:  # set namespace model if not already set
             self.namespace_model = self.pathway_model
@@ -55,8 +55,8 @@ class CompathManager(AbstractManager, BELNamespaceManagerMixin, BELManagerMixin,
 
         if not self.protein_model or self.protein_model is ...:
             raise CompathManagerProteinModelError('did not set class-level variable protein_model')
-        # if not issubclass(self.protein_model, CompathProtein):
-        #    raise TypeError('protein_model should inherit from compath_utils.models.ComPathProtein')
+        if not issubclass(self.protein_model, CompathProtein):
+            raise TypeError('protein_model should inherit from compath_utils.models.ComPathProtein')
 
         if not self.flask_admin_models or self.flask_admin_models is ...:  # set flask models if not already set
             self.flask_admin_models = [self.pathway_model, self.protein_model]
