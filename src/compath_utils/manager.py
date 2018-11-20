@@ -65,7 +65,7 @@ class CompathManager(AbstractManager, BELNamespaceManagerMixin, BELManagerMixin,
 
     def is_populated(self) -> bool:
         """Check if the database is already populated."""
-        return 0 < self._count_model(self.pathway_model)
+        return 0 < self._count_model(self.pathway_model) and 0 < self._count_model(self.protein_model)
 
     def _query_pathway(self):
         return self.session.query(self.pathway_model)
