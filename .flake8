@@ -4,6 +4,8 @@
 # (formerly in tox.ini) #
 #########################
 [flake8]
+ignore =
+	F821 # undefined names
 exclude =
     .tox,
     .git,
