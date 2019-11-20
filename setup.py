@@ -25,11 +25,11 @@ CLASSIFIERS = [
     'Topic :: Scientific/Engineering :: Bio-Informatics'
 ]
 INSTALL_REQUIRES = [
-    'bio2bel>=0.1.4',
-    'pybel',
-    'sqlalchemy',
-    'pandas',
-    'click',
+    'bio2bel>=0.2.1',
+    'pybel==0.14.1',
+    'sqlalchemy==1.3.8',
+    'pandas==0.24.2',
+    'click==7.0',
 ]
 EXTRAS_REQUIRE = {
     'docs': [
