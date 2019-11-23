@@ -31,15 +31,13 @@ class CompathPathway(ABC, DeclarativeMeta):
 
     @property
     @abstractmethod
-    def resource_id(self):
+    def resource_id(self) -> str:
         """Return the database-specific resource identifier (will be a SQLAlchemy Column instance)."""
 
     @property
     @abstractmethod
-    def url(self):
+    def url(self) -> str:
         """Return the URL to the resource, usually based in the identifier for this pathway.
-
-        :rtype: str
 
         Example for WikiPathways:
 
@@ -47,7 +45,7 @@ class CompathPathway(ABC, DeclarativeMeta):
 
             >>> @property
             >>> def url(self):
-            >>>     return 'https://www.wikipathways.org/index.php/Pathway:{}'.format(self.wikipathways_id)
+            >>>     return f'https://www.wikipathways.org/index.php/Pathway:{self.wikipathways_id}'
         """
 
     @abstractmethod

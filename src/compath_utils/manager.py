@@ -74,7 +74,7 @@ class CompathManager(AbstractManager, BELNamespaceManagerMixin, BELManagerMixin,
         """Count the pathways in the database."""
         return self._query_pathway().count()
 
-    def list_pathways(self) -> List[pathway_model]:
+    def list_pathways(self) -> List[CompathPathway]:
         """List the pathways in the database."""
         return self._query_pathway().all()
 
@@ -85,14 +85,14 @@ class CompathManager(AbstractManager, BELNamespaceManagerMixin, BELManagerMixin,
         """Count the proteins in the database."""
         return self._query_protein().count()
 
-    def list_proteins(self) -> List[protein_model]:
+    def list_proteins(self) -> List[CompathProtein]:
         """List the proteins in the database."""
         return self._query_protein().all()
 
-    def get_protein_by_hgnc_symbol(self, hgnc_symbol: str) -> Optional[protein_model]:
+    def get_protein_by_hgnc_symbol(self, hgnc_symbol: str) -> Optional[CompathProtein]:
         """Get a protein by its HGNC gene symbol.
 
-        :param hgnc_id: hgnc identifier
+        :param hgnc_symbol: HGNC gene symbol
         """
         return self._query_protein().filter(self.protein_model.hgnc_symbol == hgnc_symbol).one_or_none()
 
@@ -103,7 +103,7 @@ class CompathManager(AbstractManager, BELNamespaceManagerMixin, BELManagerMixin,
             proteins=self.count_proteins(),
         )
 
-    def _query_proteins_in_hgnc_list(self, gene_set: Iterable[str]) -> List[protein_model]:
+    def _query_proteins_in_hgnc_list(self, gene_set: Iterable[str]) -> List[CompathProtein]:
         """Return the proteins in the database within the gene set query.
 
         :param gene_set: hgnc symbol lists
@@ -111,7 +111,7 @@ class CompathManager(AbstractManager, BELNamespaceManagerMixin, BELManagerMixin,
         """
         return self._query_protein().filter(self.protein_model.hgnc_symbol.in_(gene_set)).all()
 
-    def query_similar_hgnc_symbol(self, hgnc_symbol: str, top: Optional[int] = None) -> Optional[pathway_model]:
+    def query_similar_hgnc_symbol(self, hgnc_symbol: str, top: Optional[int] = None) -> Optional[CompathPathway]:
         """Filter genes by hgnc symbol.
 
         :param hgnc_symbol: hgnc_symbol to query
@@ -199,14 +199,14 @@ class CompathManager(AbstractManager, BELNamespaceManagerMixin, BELManagerMixin,
         """Get a SQLAlchemy filter for the standard pathway identifier."""
         return cls.pathway_model_identifier_column == pathway_id
 
-    def get_pathway_by_id(self, pathway_id: str) -> Optional[pathway_model]:
+    def get_pathway_by_id(self, pathway_id: str) -> Optional[CompathPathway]:
         """Get a pathway by its database-specific identifier. Not to be confused with the standard column called "id".
 
         :param pathway_id: Pathway identifier
         """
         return self._query_pathway().filter(self._standard_pathway_identifier_filter(pathway_id)).one_or_none()
 
-    def get_pathway_by_name(self, pathway_name: str) -> Optional[pathway_model]:
+    def get_pathway_by_name(self, pathway_name: str) -> Optional[CompathPathway]:
         """Get a pathway by its database-specific name.
 
         :param pathway_name: Pathway name
@@ -218,7 +218,7 @@ class CompathManager(AbstractManager, BELNamespaceManagerMixin, BELManagerMixin,
 
         return pathways[0]
 
-    def get_all_pathways(self) -> List[pathway_model]:
+    def get_all_pathways(self) -> List[CompathPathway]:
         """Get all pathways stored in the database."""
         return self._query_pathway().all()
 
@@ -251,7 +251,7 @@ class CompathManager(AbstractManager, BELNamespaceManagerMixin, BELManagerMixin,
             if pathway.proteins
         }
 
-    def query_pathway_by_name(self, query: str, limit: Optional[int] = None) -> List[pathway_model]:
+    def query_pathway_by_name(self, query: str, limit: Optional[int] = None) -> List[CompathPathway]:
         """Return all pathways having the query in their names.
 
         :param query: query string
@@ -293,7 +293,7 @@ class CompathManager(AbstractManager, BELNamespaceManagerMixin, BELManagerMixin,
         @main.command()
         @click.option('-d', '--directory', default=os.getcwd(), help='Defaults to CWD')
         @click.pass_obj
-        def export_gene_sets(manager, directory):
+        def export_gene_sets(manager: CompathManager, directory: str):
             """Export all pathway - gene info to a excel file."""
             # https://stackoverflow.com/questions/19736080/creating-dataframe-from-a-dictionary-where-entries-have-different-lengths
             gene_sets_dict = manager.export_gene_sets()
@@ -335,7 +335,7 @@ class CompathManager(AbstractManager, BELNamespaceManagerMixin, BELManagerMixin,
         return graph
 
     @staticmethod
-    def _add_pathway_to_graph(graph: BELGraph, pathway: pathway_model):
+    def _add_pathway_to_graph(graph: BELGraph, pathway: pathway_model) -> None:
         """Add a pathway to a BEL graph."""
         pathway_node = pathway.to_pybel()
         for protein in pathway.proteins:
