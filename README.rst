@@ -20,7 +20,7 @@ or from the latest code on `GitHub <https://github.com/Compath/compath_utils>`_ 
 
 
 .. |build| image:: https://travis-ci.org/ComPath/ComPath-Utils.svg?branch=master
-    :target: https://travis-ci.org/ComPath/compath_utils
+    :target: https://travis-ci.org/ComPath/ComPath-Utils
     :alt: Build Status
 
 .. |docs| image:: http://readthedocs.org/projects/ComPath-Utils/badge/?version=latest
