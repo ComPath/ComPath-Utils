@@ -41,15 +41,4 @@ ComPath Utils is tested with Python3 on Linux using `Travis CI <https://travis-c
 from compath_utils.exc import *  # noqa: F401, F403
 from compath_utils.manager import *  # noqa: F401, F403
 from compath_utils.models import *  # noqa: F401, F403
-
-__version__ = '0.2.2-dev'
-
-__title__ = 'compath_utils'
-__description__ = "A utilities package for ComPath"
-__url__ = 'https://github.com/compath/compath_utils'
-
-__author__ = 'Charles Tapley Hoyt and Daniel Domingo-Fernández'
-__email__ = 'charles.hoyt@scai.fraunhofer.de'
-
-__license__ = 'MIT License'
-__copyright__ = 'Copyright (c) 2018 Charles Tapley Hoyt and Daniel Domingo-Fernández'
+from compath_utils.version import get_version  # noqa: F401
