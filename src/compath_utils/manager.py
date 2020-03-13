@@ -16,34 +16,38 @@ from bio2bel.manager.flask_manager import FlaskMixin
 from bio2bel.manager.namespace_manager import BELNamespaceManagerMixin
 from pybel import BELGraph
 from .exc import CompathManagerPathwayModelError, CompathManagerProteinModelError
-from .models import CompathPathway, CompathProtein
+from .models import CompathPathwayMixin, CompathProteinMixin
 from .utils import write_dict
 
 __all__ = [
     'CompathManager',
 ]
 
-log = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class CompathManager(AbstractManager, BELNamespaceManagerMixin, BELManagerMixin, FlaskMixin):
     """This is the abstract class that all ComPath managers should extend."""
 
     #: The standard pathway SQLAlchemy model
-    pathway_model: Type[CompathPathway] = None
+    pathway_model: Type[CompathPathwayMixin]
 
     #: Put the standard database identifier (ex wikipathways_id or kegg_id)
     pathway_model_identifier_column = None
 
     #: The standard protein SQLAlchemy model
-    protein_model: Type[CompathProtein] = None
+    protein_model: Type[CompathProteinMixin]
 
     def __init__(self, *args, **kwargs):
         """Doesn't let this class get instantiated if the pathway_model."""
-        if not self.pathway_model or self.pathway_model is ...:
+        if not hasattr(self, 'pathway_model'):
             raise CompathManagerPathwayModelError('did not set class-level variable pathway_model')
-        # if not issubclass(self.pathway_model, CompathPathway):
-        #    raise TypeError('pathway_model should inherit from compath_utils.models.ComPathPathway')
+        elif not issubclass(self.pathway_model, CompathPathwayMixin):
+            raise TypeError(f'{self.pathway_model} should inherit from {CompathPathwayMixin}')
+        if not hasattr(self, 'protein_model'):
+            raise CompathManagerProteinModelError('did not set class-level variable protein_model')
+        elif not issubclass(self.protein_model, CompathProteinMixin):
+            raise TypeError(f'{self.protein_model} should inherit from {CompathProteinMixin}')
 
         if not self.namespace_model or self.namespace_model is ...:  # set namespace model if not already set
             self.namespace_model = self.pathway_model
@@ -52,11 +56,6 @@ class CompathManager(AbstractManager, BELNamespaceManagerMixin, BELManagerMixin,
         # if self.pathway_model_identifier_column is None:
         #     raise CompathManagerPathwayIdentifierError(
         #         'did not set class-level variable pathway_model_standard_identifer')
-
-        if not self.protein_model or self.protein_model is ...:
-            raise CompathManagerProteinModelError('did not set class-level variable protein_model')
-        # if not issubclass(self.protein_model, CompathProtein):
-        #    raise TypeError('protein_model should inherit from compath_utils.models.ComPathProtein')
 
         if not self.flask_admin_models or self.flask_admin_models is ...:  # set flask models if not already set
             self.flask_admin_models = [self.pathway_model, self.protein_model]
@@ -74,7 +73,7 @@ class CompathManager(AbstractManager, BELNamespaceManagerMixin, BELManagerMixin,
         """Count the pathways in the database."""
         return self._query_pathway().count()
 
-    def list_pathways(self) -> List[CompathPathway]:
+    def list_pathways(self) -> List[CompathPathwayMixin]:
         """List the pathways in the database."""
         return self._query_pathway().all()
 
@@ -85,11 +84,11 @@ class CompathManager(AbstractManager, BELNamespaceManagerMixin, BELManagerMixin,
         """Count the proteins in the database."""
         return self._query_protein().count()
 
-    def list_proteins(self) -> List[CompathProtein]:
+    def list_proteins(self) -> List[CompathProteinMixin]:
         """List the proteins in the database."""
         return self._query_protein().all()
 
-    def get_protein_by_hgnc_symbol(self, hgnc_symbol: str) -> Optional[CompathProtein]:
+    def get_protein_by_hgnc_symbol(self, hgnc_symbol: str) -> Optional[CompathProteinMixin]:
         """Get a protein by its HGNC gene symbol.
 
         :param hgnc_symbol: HGNC gene symbol
@@ -103,7 +102,7 @@ class CompathManager(AbstractManager, BELNamespaceManagerMixin, BELManagerMixin,
             proteins=self.count_proteins(),
         )
 
-    def _query_proteins_in_hgnc_list(self, gene_set: Iterable[str]) -> List[CompathProtein]:
+    def _query_proteins_in_hgnc_list(self, gene_set: Iterable[str]) -> List[CompathProteinMixin]:
         """Return the proteins in the database within the gene set query.
 
         :param gene_set: hgnc symbol lists
@@ -111,7 +110,7 @@ class CompathManager(AbstractManager, BELNamespaceManagerMixin, BELManagerMixin,
         """
         return self._query_protein().filter(self.protein_model.hgnc_symbol.in_(gene_set)).all()
 
-    def query_similar_hgnc_symbol(self, hgnc_symbol: str, top: Optional[int] = None) -> Optional[CompathPathway]:
+    def query_similar_hgnc_symbol(self, hgnc_symbol: str, top: Optional[int] = None) -> Optional[CompathPathwayMixin]:
         """Filter genes by hgnc symbol.
 
         :param hgnc_symbol: hgnc_symbol to query
@@ -149,6 +148,9 @@ class CompathManager(AbstractManager, BELNamespaceManagerMixin, BELManagerMixin,
         :return: associated with the gene
         """
         protein = self.get_protein_by_hgnc_symbol(hgnc_gene_symbol)
+        if protein is None:
+            return []
+
         pathway_ids = protein.get_pathways_ids()
         enrichment_results = []
 
@@ -181,6 +183,9 @@ class CompathManager(AbstractManager, BELNamespaceManagerMixin, BELManagerMixin,
 
         for pathway_id, proteins_mapped in pathway_counter.items():
             pathway = self.get_pathway_by_id(pathway_id)
+            if pathway is None:
+                logger.warning('could not find pathway %s', pathway_id)
+                continue
 
             pathway_gene_set = pathway.get_gene_set()  # Pathway gene set
 
@@ -199,14 +204,14 @@ class CompathManager(AbstractManager, BELNamespaceManagerMixin, BELManagerMixin,
         """Get a SQLAlchemy filter for the standard pathway identifier."""
         return cls.pathway_model_identifier_column == pathway_id
 
-    def get_pathway_by_id(self, pathway_id: str) -> Optional[CompathPathway]:
+    def get_pathway_by_id(self, pathway_id: str) -> Optional[CompathPathwayMixin]:
         """Get a pathway by its database-specific identifier. Not to be confused with the standard column called "id".
 
         :param pathway_id: Pathway identifier
         """
         return self._query_pathway().filter(self._standard_pathway_identifier_filter(pathway_id)).one_or_none()
 
-    def get_pathway_by_name(self, pathway_name: str) -> Optional[CompathPathway]:
+    def get_pathway_by_name(self, pathway_name: str) -> Optional[CompathPathwayMixin]:
         """Get a pathway by its database-specific name.
 
         :param pathway_name: Pathway name
@@ -218,7 +223,7 @@ class CompathManager(AbstractManager, BELNamespaceManagerMixin, BELManagerMixin,
 
         return pathways[0]
 
-    def get_all_pathways(self) -> List[CompathPathway]:
+    def get_all_pathways(self) -> List[CompathPathwayMixin]:
         """Get all pathways stored in the database."""
         return self._query_pathway().all()
 
@@ -238,20 +243,17 @@ class CompathManager(AbstractManager, BELNamespaceManagerMixin, BELManagerMixin,
             if pathway.proteins
         }
 
-    def get_pathway_size_distribution(self) -> Mapping[str, int]:
-        """Return pathway sizes.
-
-        :return: pathway sizes
-        """
+    def get_pathway_size_distribution(self) -> Mapping[str, Tuple[str, int]]:
+        """Return pathway sizes."""
         pathways = self.get_all_pathways()
 
         return {
-            pathway.resource_id: [pathway.name, len(pathway.proteins)]
+            pathway.resource_id: (pathway.name, len(pathway.proteins))
             for pathway in pathways
             if pathway.proteins
         }
 
-    def query_pathway_by_name(self, query: str, limit: Optional[int] = None) -> List[CompathPathway]:
+    def query_pathway_by_name(self, query: str, limit: Optional[int] = None) -> List[CompathPathwayMixin]:
         """Return all pathways having the query in their names.
 
         :param query: query string
@@ -319,7 +321,7 @@ class CompathManager(AbstractManager, BELNamespaceManagerMixin, BELManagerMixin,
             return None
 
         graph = BELGraph(name=f'{pathway.name} graph')
-        self._add_pathway_to_graph(graph, pathway)
+        pathway.add_to_bel_graph(graph)
         return graph
 
     def to_bel(self) -> BELGraph:
@@ -330,13 +332,6 @@ class CompathManager(AbstractManager, BELNamespaceManagerMixin, BELManagerMixin,
         )
 
         for pathway in self._query_pathway():
-            self._add_pathway_to_graph(graph, pathway)
+            pathway.add_to_bel_graph(graph)
 
         return graph
-
-    @staticmethod
-    def _add_pathway_to_graph(graph: BELGraph, pathway: pathway_model) -> None:
-        """Add a pathway to a BEL graph."""
-        pathway_node = pathway.to_pybel()
-        for protein in pathway.proteins:
-            graph.add_part_of(protein.to_pybel(), pathway_node)
