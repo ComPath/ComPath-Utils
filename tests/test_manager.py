@@ -8,7 +8,7 @@ from sqlalchemy.ext.declarative import declarative_base
 
 from bio2bel.testing import TemporaryConnectionMethodMixin
 from compath_utils import CompathManager, CompathManagerPathwayModelError, CompathManagerProteinModelError
-from compath_utils.models import CompathPathway, CompathProtein
+from compath_utils.models import CompathPathwayMixin, CompathProteinMixin
 
 Base = declarative_base()
 
@@ -60,11 +60,11 @@ class ManagerMissingPathway(ManagerMissingFunctions):
         pass
 
 
-class TestPathway(CompathPathway):
+class TestPathway(CompathPathwayMixin):
     """A test pathway class."""
 
 
-class TestProtein(CompathProtein):
+class TestProtein(CompathProteinMixin):
     """A test protein class."""
 
 
@@ -77,7 +77,7 @@ class ManagerMissingProtein(ManagerMissingPathway):
 class ManagerOkay(ManagerMissingProtein):
     """An example of a good implementation of a manager."""
 
-    protein_model = TestPathway
+    protein_model = TestProtein
 
 
 class TestManagerFailures(unittest.TestCase):

@@ -2,23 +2,26 @@
 
 """An abstract pathway for a ComPath repository."""
 
-from abc import ABC, abstractmethod
+from __future__ import annotations
+
+from abc import abstractmethod
+from typing import List, Set
 
 from sqlalchemy import Column
-from sqlalchemy.ext.declarative import DeclarativeMeta
 
 import pybel.dsl
 
 __all__ = [
-    'CompathPathway',
-    'CompathProtein',
+    'CompathPathwayMixin',
+    'CompathProteinMixin',
 ]
 
 
-class CompathPathway(ABC, DeclarativeMeta):
+class CompathPathwayMixin:
     """This is the abstract class that the Pathway model in a ComPath repository should extend."""
 
     name: Column
+    proteins: List[CompathProteinMixin]
 
     @abstractmethod
     def get_gene_set(self):
@@ -28,11 +31,13 @@ class CompathPathway(ABC, DeclarativeMeta):
 
         :return: Return a set of protein models that all have names
         """
+        raise NotImplementedError
 
     @property
     @abstractmethod
     def resource_id(self) -> str:
         """Return the database-specific resource identifier (will be a SQLAlchemy Column instance)."""
+        raise NotImplementedError
 
     @property
     @abstractmethod
@@ -47,13 +52,23 @@ class CompathPathway(ABC, DeclarativeMeta):
             >>> def url(self):
             >>>     return f'https://www.wikipathways.org/index.php/Pathway:{self.wikipathways_id}'
         """
+        raise NotImplementedError
 
     @abstractmethod
     def to_pybel(self) -> pybel.dsl.BiologicalProcess:
         """Serialize this pathway to a PyBEL node."""
+        raise NotImplementedError
+
+    def add_to_bel_graph(self, graph: pybel.BELGraph) -> Set[str]:
+        """Add the pathway to a BEL graph."""
+        pathway_node = self.to_pybel()
+        return {
+            graph.add_part_of(protein.to_pybel(), pathway_node)
+            for protein in self.proteins
+        }
 
 
-class CompathProtein(ABC, DeclarativeMeta):
+class CompathProteinMixin:
     """This is an abstract class that the Protein model in a ComPath repository should extend."""
 
     hgnc_symbol: Column
@@ -61,7 +76,9 @@ class CompathProtein(ABC, DeclarativeMeta):
     @abstractmethod
     def get_pathways_ids(self):
         """Get the identifiers of the pathways associated with this protein."""
+        raise NotImplementedError
 
     @abstractmethod
     def to_pybel(self) -> pybel.dsl.Protein:
         """Serialize this protein to a PyBEL node."""
+        raise NotImplementedError
